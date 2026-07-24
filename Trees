@@ -1,0 +1,222 @@
+1. Logical OR of Two Binary Grids Represented as Quad-Trees (LeetCode 558)
+class Solution {
+    public Node intersect(Node quadTree1, Node quadTree2) {
+        if (quadTree1.isLeaf) {
+            return quadTree1.val ? quadTree1 : quadTree2;
+        }
+
+        if (quadTree2.isLeaf) {
+            return quadTree2.val ? quadTree2 : quadTree1;
+        }
+
+        Node topLeft = intersect(quadTree1.topLeft, quadTree2.topLeft);
+        Node topRight = intersect(quadTree1.topRight, quadTree2.topRight);
+        Node bottomLeft = intersect(quadTree1.bottomLeft, quadTree2.bottomLeft);
+        Node bottomRight = intersect(quadTree1.bottomRight, quadTree2.bottomRight);
+
+        if (topLeft.isLeaf && topRight.isLeaf &&
+            bottomLeft.isLeaf && bottomRight.isLeaf &&
+            topLeft.val == topRight.val &&
+            topRight.val == bottomLeft.val &&
+            bottomLeft.val == bottomRight.val) {
+
+            return new Node(topLeft.val, true);
+        }
+
+        return new Node(false, false, topLeft, topRight, bottomLeft, bottomRight);
+    }
+}
+2. Flip Binary Tree To Match Preorder Traversal (LeetCode 971)
+import java.util.*;
+
+class Solution {
+    List<Integer> ans = new ArrayList<>();
+    int index = 0;
+
+    public List<Integer> flipMatchVoyage(TreeNode root, int[] voyage) {
+        if (dfs(root, voyage)) {
+            return ans;
+        }
+        return Arrays.asList(-1);
+    }
+
+    boolean dfs(TreeNode node, int[] voyage) {
+        if (node == null) {
+            return true;
+        }
+
+        if (node.val != voyage[index++]) {
+            return false;
+        }
+
+        if (node.left != null &&
+            index < voyage.length &&
+            node.left.val != voyage[index]) {
+
+            ans.add(node.val);
+
+            return dfs(node.right, voyage) &&
+                   dfs(node.left, voyage);
+        }
+
+        return dfs(node.left, voyage) &&
+               dfs(node.right, voyage);
+    }
+}
+3. Kth Ancestor of a Tree Node (LeetCode 1483) - Hard
+class TreeAncestor {
+
+    int[][] up;
+    int LOG = 17;
+
+    public TreeAncestor(int n, int[] parent) {
+        while ((1 << LOG) <= n) {
+            LOG++;
+        }
+
+        up = new int[n][LOG];
+
+        for (int i = 0; i < n; i++) {
+            up[i][0] = parent[i];
+        }
+
+        for (int j = 1; j < LOG; j++) {
+            for (int i = 0; i < n; i++) {
+                if (up[i][j - 1] == -1) {
+                    up[i][j] = -1;
+                } else {
+                    up[i][j] = up[up[i][j - 1]][j - 1];
+                }
+            }
+        }
+    }
+
+    public int getKthAncestor(int node, int k) {
+        for (int j = 0; j < LOG && node != -1; j++) {
+            if ((k & (1 << j)) != 0) {
+                node = up[node][j];
+            }
+        }
+
+        return node;
+    }
+}
+4. Difference Between Maximum and Minimum Price Sum (LeetCode 2538) - Hard
+import java.util.*;
+
+class Solution {
+
+    List<Integer>[] graph;
+    long ans = 0;
+    int[] price;
+
+    public long maxOutput(int n, int[][] edges, int[] price) {
+        this.price = price;
+
+        graph = new ArrayList[n];
+
+        for (int i = 0; i < n; i++) {
+            graph[i] = new ArrayList<>();
+        }
+
+        for (int[] e : edges) {
+            graph[e[0]].add(e[1]);
+            graph[e[1]].add(e[0]);
+        }
+
+        dfs(0, -1);
+
+        return ans;
+    }
+
+    long[] dfs(int node, int parent) {
+        long withLeaf = price[node];
+        long withoutLeaf = 0;
+
+        for (int next : graph[node]) {
+            if (next == parent) {
+                continue;
+            }
+
+            long[] child = dfs(next, node);
+
+            ans = Math.max(ans,
+                    Math.max(withLeaf + child[1],
+                             withoutLeaf + child[0]));
+
+            withLeaf = Math.max(withLeaf,
+                    child[0] + price[node]);
+
+            withoutLeaf = Math.max(withoutLeaf,
+                    child[1] + price[node]);
+        }
+
+        return new long[]{withLeaf, withoutLeaf};
+    }
+}
+5. Merge BSTs to Create Single BST (LeetCode 1932) - Hard
+import java.util.*;
+
+class Solution {
+
+    Map<Integer, TreeNode> roots = new HashMap<>();
+    Set<Integer> leaves = new HashSet<>();
+
+    public TreeNode canMerge(List<TreeNode> trees) {
+
+        for (TreeNode root : trees) {
+            roots.put(root.val, root);
+
+            if (root.left != null) {
+                leaves.add(root.left.val);
+            }
+
+            if (root.right != null) {
+                leaves.add(root.right.val);
+            }
+        }
+
+        TreeNode root = null;
+
+        for (TreeNode tree : trees) {
+            if (!leaves.contains(tree.val)) {
+                root = tree;
+                break;
+            }
+        }
+
+        if (root == null) {
+            return null;
+        }
+
+        roots.remove(root.val);
+
+        if (!build(root, Integer.MIN_VALUE, Integer.MAX_VALUE)) {
+            return null;
+        }
+
+        return roots.isEmpty() ? root : null;
+    }
+
+    boolean build(TreeNode node, int low, int high) {
+        if (node == null) {
+            return true;
+        }
+
+        if (node.val <= low || node.val >= high) {
+            return false;
+        }
+
+        if (node.left == null &&
+            node.right == null &&
+            roots.containsKey(node.val)) {
+
+            TreeNode merge = roots.remove(node.val);
+            node.left = merge.left;
+            node.right = merge.right;
+        }
+
+        return build(node.left, low, node.val) &&
+               build(node.right, node.val, high);
+    }
+}
